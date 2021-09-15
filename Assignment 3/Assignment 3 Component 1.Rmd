@@ -1,0 +1,231 @@
+---
+title: "Assignment 3 MSDS 411"
+author: "Robin Singh"
+date: "7/27/2021"
+output: html_document
+---
+
+```{r}
+library("readxl")
+
+mydata <- read_excel("recidivism.xlsx")
+mydata
+```
+```{r}
+summary(mydata)
+hist(mydata$durat)
+hist(mydata$follow)
+hist(mydata$drugs)
+hist(mydata$alcohol)
+```
+```{r}
+d1=dist(mydata)
+d1
+```
+
+
+```{r}
+library(cluster)
+daisy(mydata, metric = c("euclidean"))
+```
+
+```{r}
+fit=cmdscale(d1, eig=TRUE, k=2)
+fit
+plot(fit$points)
+abline(v=0,h=0)
+```
+
+```{r}
+plot(fit$points, col=ifelse(mydata$black==0, 'blue','red'))
+abline(v=0,h=0)
+legend(450,-75,legend=c("Black", "Not Black"),
+       col=c("red", "blue"), pch=1)
+```
+```{r}
+plot(fit$points, col=ifelse(mydata$alcohol==0, 'blue','red'))
+abline(v=0,h=0)
+legend(450,-75,legend=c("Alc", "No Alc"),
+       col=c("red", "blue"), pch=1)
+```
+```{r}
+plot(fit$points, col=ifelse(mydata$drugs==0, 'blue','red'))
+abline(v=0,h=0)
+legend(450,-75,legend=c("Drugs", "No Drugs"),
+       col=c("red", "blue"), pch=1)
+```
+
+```{r}
+rbPal <- colorRampPalette(c('red','blue'))
+
+#This adds a column of color values
+# based on the y values
+mydata$Col <- rbPal(10)[as.numeric(cut(mydata$durat,breaks = 10))]
+
+plot(fit$points, col=mydata$Col)
+abline(v=0,h=0)
+
+```
+```{r}
+plot(fit$points, col=ifelse(mydata$super==0, 'blue','red'))
+abline(v=0,h=0)
+legend(450,-75,legend=c("Super", "Not super"),
+       col=c("red", "blue"), pch=1)
+```
+```{r}
+plot(fit$points, col=ifelse(mydata$married==0, 'blue','red'))
+abline(v=0,h=0)
+legend(450,-75,legend=c("Married", "Not Married"),
+       col=c("red", "blue"), pch=1)
+```
+
+
+```{r}
+plot(fit$points, col=ifelse(mydata$felon==0, 'blue','red'))
+abline(v=0,h=0)
+legend(450,-75,legend=c("FELON", "Not FELON"),
+       col=c("red", "blue"), pch=1)
+```
+```{r}
+plot(fit$points, col=ifelse(mydata$workprg==0, 'blue','red'))
+abline(v=0,h=0)
+legend(390,-75,legend=c("WorkPrg", "Not in WorkPrg"),
+       col=c("red", "blue"), pch=1)
+```
+
+```{r}
+plot(fit$points, col=ifelse(mydata$property==0, 'blue','red'))
+abline(v=0,h=0)
+legend(350,-75,legend=c("Property Crime", "Not in property Crime"),
+       col=c("red", "blue"), pch=1)
+```
+```{r}
+plot(fit$points, col=ifelse(mydata$person==0, 'blue','red'))
+abline(v=0,h=0)
+legend(350,-75,legend=c("Person Crime", "Not in Person Crime"),
+       col=c("red", "blue"), pch=1)
+```
+
+
+```{r}
+rbPal <- colorRampPalette(c('red','blue'))
+
+#This adds a column of color values
+# based on the y values
+mydata$Col2 <- rbPal(10)[as.numeric(cut(mydata$priors,breaks = 10))]
+
+plot(fit$points, col=mydata$Col2)
+abline(v=0,h=0)
+```
+```{r}
+rbPal <- colorRampPalette(c('red','blue'))
+
+#This adds a column of color values
+# based on the y values
+mydata$Col2 <- rbPal(10)[as.numeric(cut(mydata$educ,breaks = 10))]
+
+plot(fit$points, col=mydata$Col2)
+abline(v=0,h=0)
+```
+
+```{r}
+rbPal <- colorRampPalette(c('red','blue'))
+
+#This adds a column of color values
+# based on the y values
+mydata$Col2 <- rbPal(10)[as.numeric(cut(mydata$rules,breaks =9))]
+
+plot(fit$points, col=mydata$Col2)
+abline(v=0,h=0)
+
+```
+
+```{r}
+rbPal <- colorRampPalette(c('red','blue'))
+
+#This adds a column of color values
+# based on the y values
+mydata$Col2 <- rbPal(10)[as.numeric(cut(mydata$age,breaks = 10))]
+
+plot(fit$points, col=mydata$Col2)
+abline(v=0,h=0)
+```
+
+```{r}
+rbPal <- colorRampPalette(c('red','blue'))
+
+#This adds a column of color values
+# based on the y values
+mydata$Col2 <- rbPal(10)[as.numeric(cut(mydata$tserved,breaks = 50))]
+
+plot(fit$points, col=mydata$Col2)
+abline(v=0,h=0)
+```
+
+```{r}
+valcol <- (mydata$tserved + abs(min(mydata$tserved )))/max(mydata$tserved  + abs(min(mydata$tserved)))
+plot(fit$points, col=rgb(0, 0, valcol))
+abline(v=0,h=0)
+```
+
+```{r}
+valcol <- (mydata$durat + abs(min(mydata$durat)))/max(mydata$durat  + abs(min(mydata$durat)))
+plot(fit$points, col=rgb(0, 0, valcol))
+abline(v=0,h=0)
+```
+```{r}
+valcol <- (mydata$follow + abs(min(mydata$follow)))/max(mydata$follow  + abs(min(mydata$follow)))
+plot(fit$points, col=rgb(0, 0, valcol))
+abline(v=0,h=0)
+```
+```{r}
+valcol <- (mydata$cens + abs(min(mydata$cens)))/max(mydata$cens  + abs(min(mydata$cens)))
+plot(fit$points, col=rgb(0, 0, valcol))
+abline(v=0,h=0)
+```
+```{r}
+valcol <- (mydata$ldurat + abs(min(mydata$ldurat)))/max(mydata$ldurat  + abs(min(mydata$ldurat)))
+plot(fit$points, col=rgb(0, 0, valcol))
+abline(v=0,h=0)
+```
+
+
+```{r}
+
+fit3d <- cmdscale(d1, eig=TRUE, k=3) # k is the number of dim
+fit3d # view results
+
+#Plot in 3d
+library(rgl)
+plot3d(fit3d$points, col="dodgerblue2", size=4, pch=19, xlab="Dimension 1", ylab="Dimension 2", zlab="Dimension 3", main="3d Visualization")
+
+
+#and here is a bit of code that makes a spinning animation that saves to a .gif file. 
+
+library(magick)
+#Just the Spin: 
+play3d(spin3d(axis=c(0,1,1), rpm=3), duration=30)
+#Make a Movie:
+movie3d(spin3d(axis=c(0,1,1), rpm=2), duration=10, movie="MyCoolGIF", dir="~/Desktop")
+```
+
+
+```{r}
+library(MASS)
+fit2=isoMDS(d1,k=2)
+fit2
+
+plot(fit2$points)
+abline(v=0,h=0)
+```
+```{r}
+valcol <- (mydata$durat + abs(min(mydata$durat)))/max(mydata$durat  + abs(min(mydata$durat)))
+plot(fit2$points, col=rgb(0, 0, valcol))
+abline(v=0,h=0)
+```
+```{r}
+valcol <- (mydata$cens + abs(min(mydata$cens)))/max(mydata$cens  + abs(min(mydata$cens)))
+plot(fit2$points, col=rgb(0, 0, valcol))
+abline(v=0,h=0)
+```
+

@@ -1,0 +1,278 @@
+---
+title: "Assignment 3 Component 2"
+author: "Robin Singh"
+date: "7/28/2021"
+output: html_document
+---
+```{r}
+mydata <- read.csv("college_acceptance.csv")
+mydata
+```
+```{r}
+hist(mydata$rank)
+```
+
+```{r}
+hist(mydata$gpa)
+```
+```{r}
+hist(mydata$admit)
+```
+```{r}
+hist(mydata$gre)
+```
+
+```{r}
+mydata$scaledgre=scale(mydata$gre, center = TRUE, scale = TRUE)
+mydata$scaledgpa=scale(mydata$gpa, center = TRUE, scale = TRUE)
+mydata$scaledrank=scale(mydata$rank, center = TRUE, scale = TRUE)
+hist(mydata$scaledgre)
+hist(mydata$scaledgpa)
+hist(mydata$scaledrank)
+```
+
+
+```{r}
+require(tidyverse)
+require(kohonen)
+require(ggplot2)
+require(ggridges)
+
+###########################
+# Helper functions
+###########################
+
+# find the graph node number by the coordinates
+find_node_by_coordinates <- function(x, y, grid_width) {
+ return(((y * grid_width) + x) - grid_width)
+}
+
+# return the number of observations represented by each node
+get_node_counts <- function(x) {
+ df <- data.frame(node = x)
+ counts <- df %>%
+   group_by(node) %>%
+   summarize(observations = n())
+}
+
+# guideline for grid size = 5 * sqrt(N)
+# where N is the number of observations in the data set
+find_grid_size <- function(N) {
+ return(floor(sqrt(sqrt(N) * 5)))
+}
+
+# Shane Lynn 14-01-2014 used to define the palette
+coolBlueHotRed <- function(n, alpha = 1) {
+ rainbow(n, end=4/6, alpha=alpha)[n:1]
+}
+```
+
+
+
+```{r}
+
+```
+
+
+```{r}
+
+# load data - select the Credit_Card_Applications.csv
+myFile <- file.choose()
+raw_data <- read.csv(myFile,header=TRUE)
+
+# check for missing observations
+raw_data$gre=mydata$scaledgre
+raw_data$gpa=mydata$scaledgpa
+raw_data$rank=as.factor(raw_data$rank)
+
+# review the distributions of normal and fraudulent applications
+raw_data %>%
+
+ gather(variable, value, -rank) %>%
+ ggplot(aes(y = as.factor(variable),
+             fill = rank,
+             x = percent_rank(value))) +
+ geom_density_ridges() +
+ ggtitle('Class Distributions') +
+ theme(plot.title = element_text(hjust = 0.5)) +
+ xlab('Value') +
+ ylab('Variable')
+
+
+ data <- raw_data
+```
+
+```{r}
+# find all columns having numeric data
+numerics <- data %>%
+ select_if(is.numeric) %>%
+ names
+
+# find all columns having factors
+factors <- data %>%
+ select_if(is.factor) %>%
+ names
+
+```
+
+```{r}
+
+# load data - select the Credit_Card_Applications.csv
+myFile <- file.choose()
+raw_data <- read.csv(myFile,header=TRUE)
+
+# check for missing observations
+raw_data$gre=mydata$scaledgre
+raw_data$gpa=mydata$scaledgpa
+raw_data$rank=mydata$scaledrank
+raw_data$admit=as.factor(raw_data$admit)
+
+# review the distributions of normal and fraudulent applications
+raw_data %>%
+
+ gather(variable, value, -admit) %>%
+ ggplot(aes(y = as.factor(variable),
+             fill = admit,
+             x = percent_rank(value))) +
+ geom_density_ridges() +
+ ggtitle('Class Distributions') +
+ theme(plot.title = element_text(hjust = 0.5)) +
+ xlab('Value') +
+ ylab('Variable')
+
+
+ data <- raw_data
+```
+```{r}
+numerics <- data %>%
+ select_if(is.numeric) %>%
+ names
+
+# find all columns having factors
+factors <- data %>%
+ select_if(is.factor) %>%
+ names
+```
+
+```{r}
+data_list = list()
+distances = vector()
+
+# create a layer for each factor
+for (fac in factors){
+ data_list[[fac]] = kohonen::classvec2classmat( data[[fac]] )
+ distances = c(distances, 'tanimoto')
+}
+
+data_list[['numerics']] = scale(data[,numerics])
+distances = c(distances, 'sumofsquares')
+
+```
+
+```{r}
+# call the find_grid_size function to calculate the grid size
+map_dimension = find_grid_size(dim(raw_data)[1])
+
+# set the number of times the model will cycle through the observations
+epochs = 2000
+set.seed(123)
+
+# create a grid onto which the som will be mapped
+som_grid = somgrid(xdim = map_dimension
+                   ,ydim = map_dimension
+                   ,topo = "rectangular")
+
+# train the SOM
+cc_som = supersom(data_list
+                  ,grid = som_grid
+                  ,rlen = epochs
+                  ,alpha = c(0.1, 0.01)
+                  ,whatmap = c(factors, 'numerics')
+                  ,dist.fcts = distances
+                  ,keep.data = TRUE
+)
+
+```
+
+```{r}
+plot(cc_som, type = "changes")
+```
+
+```{r}
+plot(cc_som, type = "counts", palette.name = coolBlueHotRed)
+```
+
+```{r}
+cc_som$unit.classif
+observations_by_node <- get_node_counts(cc_som$unit.classif)
+```
+
+```{r}
+plot(cc_som, type = "dist.neighbours", palette.name = coolBlueHotRed)
+```
+
+```{r}
+anomalies <- find_node_by_coordinates(11, 3, 11)
+rows <- which(cc_som$unit.classif == anomalies)
+raw_data[rows, ]
+```
+
+```{r}
+plot(cc_som, type = "codes", palette.name = coolBlueHotRed)
+```
+```{r}
+cc_som$codes[["admit"]]
+
+```
+```{r}
+map_dimension = find_grid_size(dim(raw_data)[1])
+
+# set the number of times the model will cycle through the observations
+epochs = 2000
+set.seed(123)
+
+# create a grid onto which the som will be mapped
+som_grid = somgrid(xdim = 9
+                   ,ydim = 9
+                   ,topo = "rectangular")
+
+# train the SOM
+cc_som = supersom(data_list
+                  ,grid = som_grid
+                  ,rlen = epochs
+                  ,alpha = c(0.1, 0.01)
+                  ,whatmap = c(factors, 'numerics')
+                  ,dist.fcts = distances
+                  ,keep.data = TRUE
+)
+
+```
+
+
+```{r}
+plot(cc_som, type = "changes")
+```
+```{r}
+plot(cc_som, type = "counts", palette.name = coolBlueHotRed)
+```
+```{r}
+cc_som$unit.classif
+observations_by_node <- get_node_counts(cc_som$unit.classif)
+```
+
+```{r}
+plot(cc_som, type = "dist.neighbours", palette.name = coolBlueHotRed)
+```
+
+```{r}
+anomalies <- find_node_by_coordinates(11, 3, 11)
+rows <- which(cc_som$unit.classif == anomalies)
+raw_data[rows, ]
+```
+```{r}
+plot(cc_som, type = "codes", palette.name = coolBlueHotRed)
+```
+```{r}
+cc_som$codes[["admit"]]
+
+```
