@@ -1,0 +1,504 @@
+---
+title: "P2"
+author: "Robin Singh"
+date: "8/24/2021"
+output: html_document
+---
+
+```{r}
+mydata <- read.csv(file="ames_housing_data.csv",head=TRUE,sep=",")
+mydata
+```
+
+```{r}
+mydata$TotalFloorSF <- mydata$FirstFlrSF + mydata$SecondFlrSF
+mydata$HouseAge <- mydata$YrSold - mydata$YearBuilt
+mydata$QualityIndex <- mydata$OverallQual * mydata$OverallCond
+mydata$logSalePrice <- log(mydata$SalePrice)
+mydata$price_sqft <- mydata$SalePrice/mydata$TotalFloorSF
+summary(mydata$price_sqft)
+hist(mydata$price_sqft)
+subdata <- subset(mydata, select=c("TotalFloorSF","HouseAge","QualityIndex",
+                                  "price_sqft", "SalePrice","LotArea",
+                                  "BsmtFinSF1","Neighborhood","HouseStyle",
+                                  "LotShape","OverallQual","logSalePrice",
+                                  "TotalBsmtSF","HouseStyle","Zoning","LotShape","SaleCondition","Functional", "LotArea","SubClass","LotFrontage","OverallCond", "YearBuilt", "ExterQual", "ExterCond", "FirstFlrSF", "SecondFlrSF", "BedroomAbvGr", "TotRmsAbvGrd", "GrLivArea", "MiscVal", "YearRemodel"))
+
+
+
+subdata
+```
+```{r}
+subdatnum <- subset(mydata, select=c("TotalFloorSF","HouseAge","QualityIndex",
+                                     "SalePrice","LotArea","OverallQual"))
+
+require(lattice)
+pairs(subdatnum, pch = 21)
+
+require(corrplot)
+mcor <- cor(subdatnum)
+corrplot(mcor, method="shade", shade.col=NA, tl.col="black",tl.cex=0.5)
+```
+Overall quality and SalePrice seems to have a bit of a linear relationship, as well as quality index but that is to be expected. 
+
+SalePrice and TotalFLoorSF seems to have a slight linear relationship.
+
+logSalePrice and HouseAge seem to have an opposite linear coordination. 
+
+```{r}
+library(ggplot2)
+ggplot(subdata, aes(x=TotalFloorSF, y=QualityIndex)) + 
+  geom_point(color="blue", shape=1) +
+  ggtitle("Scatter Plot of Total Floor SF vs QualityIndex") +
+  theme(plot.title=element_text(lineheight=0.8, face="bold", hjust=0.5))
+
+ggplot(subdata, aes(x=TotalFloorSF, y=HouseAge)) + 
+  geom_point(color="blue", shape=1) +
+  ggtitle("Scatter Plot of Total Floor SF vs HouseAge") +
+  theme(plot.title=element_text(lineheight=0.8, face="bold", hjust=0.5))
+
+ggplot(subdata, aes(x=TotalFloorSF, y=SalePrice)) + 
+  geom_point(color="blue", shape=1) +
+  ggtitle("Scatter Plot of Total Floor SF vs QualityIndex") +
+  theme(plot.title=element_text(lineheight=0.8, face="bold", hjust=0.5))
+
+ggplot(subdata, aes(x=SalePrice, y=QualityIndex)) + 
+  geom_point(color="blue", shape=1) +
+  ggtitle("Scatter Plot of Total Floor SF vs HouseAge") +
+  theme(plot.title=element_text(lineheight=0.8, face="bold", hjust=0.5))
+```
+```{r}
+subdata = subset(subdata, select = -c(OverallQual,QualityIndex, logSalePrice, price_sqft) )
+model1=lm(SalePrice~., data=subdata)
+summary(model1)
+model1
+```
+```{r}
+model2=lm(SalePrice~TotalFloorSF+HouseAge+LotArea+MiscVal, data=subdata)
+summary(model2)
+model2
+```
+
+```{r}
+
+
+model3=lm(SalePrice~TotalFloorSF+HouseAge+LotArea+MiscVal, data=subdata)
+summary(model3)
+model3
+```
+```{r}
+num_cols <- unlist(lapply(subdata, is.numeric))
+
+subdata <- subdata[ ,num_cols]
+model4=lm(SalePrice~., data=subdata)
+summary(model4)
+model4
+```
+```{r}
+subdata=na.omit(subdata)
+
+
+subdata= subdata[,!(names(subdata) %in% c('LotArea.1', 'SecondFlrSF' ))]
+```
+```{r}
+
+
+model5=lm(SalePrice~., data=subdata)
+summary(model5)
+model5
+```
+
+```{r}
+
+mydata$TotalFloorSF <- mydata$FirstFlrSF + mydata$SecondFlrSF
+mydata$HouseAge <- mydata$YrSold - mydata$YearBuilt
+mydata$QualityIndex <- mydata$OverallQual * mydata$OverallCond
+mydata$logSalePrice <- log(mydata$SalePrice)
+mydata$price_sqft <- mydata$SalePrice/mydata$TotalFloorSF
+subdatawithNeighborhood=mydata
+num_cols <- unlist(lapply(subdatawithNeighborhood, is.numeric))
+
+subdatawithNeighborhood <- subdatawithNeighborhood[ ,num_cols]
+subdatawithNeighborhood$Neighborhood=mydata$Neighborhood
+subdatawithNeighborhood
+```
+
+
+```{r}
+subdatawithNeighborhood=na.omit(subdatawithNeighborhood)
+subdatawithNeighborhood
+subdatawithNeighborhood = subset(subdatawithNeighborhood, select = -c(OverallQual,QualityIndex, logSalePrice, price_sqft, TotalBsmtSF,GrLivArea, MoSold, YrSold,  EnclosedPorch, ThreeSsnPorch) )
+model6=lm(SalePrice~., data = subdatawithNeighborhood)
+model6
+summary(model6)
+
+```
+
+
+
+
+
+
+
+
+
+```{r}
+model7=lm(SalePrice~TotalFloorSF+HouseAge+LotArea+MiscVal+Neighborhood, data=subdatawithNeighborhood)
+model7
+summary(model7)
+```
+
+
+
+
+```{r}
+library('fastDummies')
+subdatawithNeighborhood <- dummy_cols(subdatawithNeighborhood, select_columns = 'Neighborhood',
+           remove_selected_columns = TRUE)
+subdatawithNeighborhood=scale(subdatawithNeighborhood)
+corrmatrix <- rcorr(as.matrix(subdatawithNeighborhood))
+corrmatrix
+```
+```{r}
+is.matrix(corrmatrix$r)
+corrmatrix=corrmatrix$r
+isSymmetric(corrmatrix)
+```
+```{r}
+library(corrplot)
+corrplot(corrmatrix)
+```
+```{r}
+library(psych)
+fa(corrmatrix, nfactors=8) 
+#factors_data <- factanal(covmat=corrmatrix, n.obs=2439, factors=3, rotation='varimax');
+
+```
+```{r}
+fa.parallel(corrmatrix, 
+            n.obs=2258, 
+            fa="both", 
+            n.iter=100,
+            fm="ml",
+            show.legend=TRUE, main="Scree plot with parallel analysis")
+```
+```{r}
+eigen(corrmatrix)
+```
+```{r}
+factors_data <- fa(r = corrmatrix, nfactors = 15)
+
+#factors_data <- factanal(covmat=corrmatrix, n.obs=2258, factors=15, rotation='varimax', fm='ml');
+
+factors_data
+```
+
+
+
+```{r}
+###########################
+# Helper functions
+###########################
+
+# find the graph node number by the coordinates
+find_node_by_coordinates <- function(x, y, grid_width) {
+ return(((y * grid_width) + x) - grid_width)
+}
+
+# return the number of observations represented by each node
+get_node_counts <- function(x) {
+ df <- data.frame(node = x)
+ counts <- df %>%
+   group_by(node) %>%
+   summarize(observations = n())
+}
+
+# guideline for grid size = 5 * sqrt(N)
+# where N is the number of observations in the data set
+find_grid_size <- function(N) {
+ return(floor(sqrt(sqrt(N) * 5)))
+}
+
+# Shane Lynn 14-01-2014 used to define the palette
+coolBlueHotRed <- function(n, alpha = 1) {
+ rainbow(n, end=4/6, alpha=alpha)[n:1]
+}
+```
+```{r}
+#names(as.data.frame(subdatawithNeighborhood))
+subdatawithNeighborhood2=as.data.frame(subdatawithNeighborhood[,0:34])
+```
+
+```{r}
+subdatawithNeighborhood
+```
+
+
+```{r}
+
+mydata$TotalFloorSF <- mydata$FirstFlrSF + mydata$SecondFlrSF
+mydata$HouseAge <- mydata$YrSold - mydata$YearBuilt
+mydata$QualityIndex <- mydata$OverallQual * mydata$OverallCond
+mydata$logSalePrice <- log(mydata$SalePrice)
+mydata$price_sqft <- mydata$SalePrice/mydata$TotalFloorSF
+subdatawithNeighborhood2=mydata
+num_cols <- unlist(lapply(subdatawithNeighborhood2, is.numeric))
+
+subdatawithNeighborhood2 <- subdatawithNeighborhood2[ ,num_cols]
+subdatawithNeighborhood2$Neighborhood=mydata$Neighborhood
+subdatawithNeighborhood2
+```
+
+
+```{r}
+subdatawithNeighborhood2=na.omit(subdatawithNeighborhood2)
+subdatawithNeighborhood2
+subdatawithNeighborhood2 = subset(subdatawithNeighborhood2, select = -c(OverallQual,QualityIndex, logSalePrice, price_sqft, TotalBsmtSF,GrLivArea, MoSold, YrSold,  EnclosedPorch, ThreeSsnPorch) )
+
+
+
+```
+```{r}
+require(tidyverse)
+require(kohonen)
+require(ggplot2)
+require(ggridges)
+
+
+subdatawithNeighborhood2 %>%
+
+ gather(variable, value, -Neighborhood) %>%
+ ggplot(aes(y = as.factor(variable),
+             fill = Neighborhood,
+             x = percent_rank(value))) +
+ geom_density_ridges() +
+ ggtitle('Class Distributions') +
+ theme(plot.title = element_text(hjust = 0.5)) +
+ xlab('Value') +
+ ylab('Variable')
+```
+```{r}
+scaleddatawneighborhood=as.data.frame(scale(subdatawithNeighborhood2[,-ncol(subdatawithNeighborhood2)]))
+scaleddatawneighborhood$Neighborhood=subdatawithNeighborhood2$Neighborhood
+scaleddatawneighborhood=scaleddatawneighborhood[,-c(1,2)]
+scaleddatawneighborhood
+scaleddatawneighborhood %>%
+
+ gather(variable, value, -Neighborhood) %>%
+ ggplot(aes(y = as.factor(variable),
+             fill = Neighborhood,
+             x = percent_rank(value))) +
+ geom_density_ridges() +
+ ggtitle('Class Distributions') +
+ theme(plot.title = element_text(hjust = 0.5)) +
+ xlab('Value') +
+ ylab('Variable')
+```
+```{r}
+# find all columns having numeric data
+numerics <- scaleddatawneighborhood %>%
+ select_if(is.numeric) %>%
+ names
+
+scaleddatawneighborhood$Neighborhood <- as.factor(scaleddatawneighborhood$Neighborhood)
+
+# find all columns having factors
+factors <- scaleddatawneighborhood %>%
+ select_if(is.factor) %>%
+ names
+
+numerics
+
+```
+
+
+```{r}
+factors
+```
+
+```{r}
+
+data_list = list()
+distances = vector()
+
+# create a layer for each factor
+for (fac in factors){
+ data_list[[fac]] = kohonen::classvec2classmat( scaleddatawneighborhood[[fac]] )
+ distances = c(distances, 'tanimoto')
+}
+
+data_list[['numerics']] = scale(scaleddatawneighborhood[,numerics])
+distances = c(distances, 'sumofsquares')
+```
+
+```{r}
+# review data_list
+str(data_list)
+names(data_list)
+
+# review distance measures
+distances
+```
+```{r}
+# call the find_grid_size function to calculate the grid size
+map_dimension = find_grid_size(dim(scaleddatawneighborhood)[1])
+
+# set the number of times the model will cycle through the observations
+epochs = 2000
+set.seed(123)
+
+# create a grid onto which the som will be mapped
+som_grid = somgrid(xdim = 7
+                   ,ydim = 7
+                   ,topo = "rectangular")
+
+
+# train the SOM
+cc_som = supersom(data_list
+                  ,grid = som_grid
+                  ,rlen = epochs
+                  ,alpha = c(0.1, 0.01)
+                  ,whatmap = c(factors,'Neighborhood', 'numerics')
+                  ,dist.fcts = distances
+                  ,keep.data = TRUE
+)
+
+```
+
+dplyr::summarize
+library(tidyverse)
+plot(cc_som, type = "changes")
+
+plot(cc_som, type = "counts", palette.name = coolBlueHotRed)
+
+cc_som$unit.classif
+observations_by_node <- get_node_counts(cc_som$unit.classif)
+
+round(mean(observations_by_node$observations), 2)
+
+plot(cc_som, type = "dist.neighbours", palette.name = coolBlueHotRed)
+
+plot(cc_som, type = "codes", palette.name = coolBlueHotRed)
+
+
+
+```{r}
+plot(cc_som, type = "changes")
+```
+```{r}
+plot(cc_som, type = "counts", palette.name = coolBlueHotRed)
+```
+```{r}
+cc_som$unit.classif
+observations_by_node <- get_node_counts(cc_som$unit.classif)
+```
+```{r}
+plot(cc_som, type = "dist.neighbours", palette.name = coolBlueHotRed)
+
+```
+```{r}
+anomalies <- find_node_by_coordinates(7, 4, 7)
+rows <- which(cc_som$unit.classif == anomalies)
+scaleddatawneighborhood[rows, ]
+```
+```{r}
+anomalies <- find_node_by_coordinates(1, 5, 1)
+rows <- which(cc_som$unit.classif == anomalies)
+scaleddatawneighborhood[rows, ]
+```
+
+
+
+```{r}
+plot(cc_som, type = "codes", palette.name = coolBlueHotRed)
+```
+
+```{r}
+plot(cc_som, type = "property", property = getCodes(cc_som)[["Neighborhood"]],
+main=colnames(getCodes(cc_som))[["Neighborhood"]], palette.name=coolBlueHotRed)
+```
+```{r}
+cc_som$codes[["Neighborhood"]]
+```
+
+```{r}
+plot(cc_som, type = "quality", palette.name = coolBlueHotRed)
+```
+```{r}
+###########################
+# Clustering
+###########################
+
+library(RColorBrewer)
+n <- 60
+qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
+col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+
+# fuse all layers into one dataframe
+codes = tibble( layers = names(cc_som$codes)
+                ,codes = cc_som$codes ) %>%
+ mutate( codes = purrr::map(codes, as_tibble) ) %>%
+ spread( key = layers, value = codes) %>%
+ apply(1, bind_cols) %>%
+ .[[1]] %>%
+ as_tibble()
+
+# generate distance matrix for codes
+dist_m = dist(codes) %>%
+ as.matrix()
+
+# generate seperate distance matrix for map location
+dist_on_map = kohonen::unit.distances(som_grid)
+
+#exponentiate euclidean distance by distance on map
+dist_adj = dist_m ^ dist_on_map
+
+clust_adj = hclust(as.dist(dist_adj), 'ward.D2')
+
+som_cluster_adj = cutree(clust_adj, 11)
+
+plot(cc_som, type="codes", main = "Clusters", bgcol = col_vector[som_cluster_adj], pchs = NA)
+```
+```{r}
+cc_som$unit.classif
+observations_by_node <- get_node_counts(cc_som$unit.classif)
+```
+```{r}
+
+cc.som = supersom(data_list
+                  ,grid = som_grid
+                  ,rlen = epochs
+                  ,alpha = c(0.1, 0.01)
+                  ,whatmap = c(factors, 'numerics')
+                  ,dist.fcts = distances
+                  ,keep.data = TRUE
+)
+
+plot(cc.som, type = "changes")
+
+plot(cc.som, type = "counts", palette.name = coolBlueHotRed)
+
+cc.som$unit.classif
+observations_by_node <- get_node_counts(cc.som$unit.classif)
+
+round(mean(observations_by_node$observations), 2)
+
+plot(cc.som, type = "dist.neighbours", palette.name = coolBlueHotRed)
+
+plot(cc.som, type = "codes", palette.name = coolBlueHotRed)
+```
+```{r}
+find_grid_size(dim(scaleddatawneighborhood)[1])
+```
+
+
+
+
+
+
+
+
+
+
+
+

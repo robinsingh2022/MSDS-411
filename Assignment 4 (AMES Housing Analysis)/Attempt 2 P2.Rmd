@@ -1,0 +1,309 @@
+---
+title: "Attempt 2 P2"
+author: "Robin Singh"
+date: "8/19/2021"
+output: html_document
+---
+```{r}
+require(tidyverse)
+require(kohonen)
+require(ggplot2)
+require(ggridges)
+library(fastDummies)
+library(tidyr)
+mydata <- read.csv(file="ames_housing_data.csv",head=TRUE,sep=",")
+mydata
+```
+
+
+
+
+```{r}
+mydata$TotalFloorSF <- mydata$FirstFlrSF + mydata$SecondFlrSF
+mydata$HouseAge <- mydata$YrSold - mydata$YearBuilt
+mydata$QualityIndex <- mydata$OverallQual * mydata$OverallCond
+mydata$logSalePrice <- log(mydata$SalePrice)
+mydata$price_sqft <- mydata$SalePrice/mydata$TotalFloorSF
+summary(mydata$price_sqft)
+hist(mydata$price_sqft)
+subdata <- subset(mydata, select=c("TotalFloorSF","HouseAge","QualityIndex",
+                                  "price_sqft", "SalePrice","LotArea",
+                                  "Neighborhood","HouseStyle",
+                                  "LotShape","OverallQual","logSalePrice",
+                                  "HouseStyle","Zoning","LotShape","SaleCondition","Functional", "LotArea","SubClass","OverallCond", "YearBuilt", "ExterQual", "ExterCond", "FirstFlrSF", "SecondFlrSF", "BedroomAbvGr", "TotRmsAbvGrd", "GrLivArea", "MiscVal", "YearRemodel"))
+
+
+
+subdata
+num_cols <- unlist(lapply(subdata, is.numeric))
+
+subdatanum <- subdata[ ,num_cols]
+z=subdatanum$QualityIndex
+subdatanum <- as.data.frame(scale(subdatanum))
+subdatanum$QualityIndex=z
+```
+
+
+subdatanum$Neighborhood=subdata$Neighborhood
+subdatanum$Zoning=subdata$Zoning
+subdatanum$HouseStyle=subdata$HouseStyle
+
+subdatanum <- dummy_cols(subdatanum, select_columns = c('Neighborhood','Zoning', 'HouseStyle'),
+           remove_selected_columns = TRUE)
+subdatanum
+
+
+```{r}
+cols=c("OverallCond", "Neighborhood_Blmngtn", "Neighborhood_Blueste", "Neighborhood_BrDale", "Neighborhood_BrkSide", "Neighborhood_ClearCr", "Neighborhood_CollgCr", "Neighborhood_Crawfor", "Neighborhood_Edwards", "Neighborhood_Gilbert", "Neighborhood_Greens", "Neighborhood_GrnHill", "Neighborhood_IDOTRR",  "Neighborhood_Landmrk",  "Neighborhood_MeadowV", "Neighborhood_Mitchel", "Neighborhood_NAmes", "Neighborhood_NoRidge", "Neighborhood_NPkVill", "Neighborhood_NridgHt", "Neighborhood_NWAmes", "Neighborhood_OldTown", "Neighborhood_Sawyer", "Neighborhood_SawyerW", "Neighborhood_Somerst", "Neighborhood_StoneBr", "Neighborhood_SWISU", "Neighborhood_Timber", "Neighborhood_Veenker", "Zoning_A (agr)", "Zoning_C (all)", "Zoning_FV", "Zoning_I (all)",  "Zoning_RH", "Zoning_RL","Zoning_RM", "HouseStyle_1.5Fin", "HouseStyle_1.5Unf", "HouseStyle_1Story", "HouseStyle_2.5Fin", "HouseStyle_2.5Unf",  "HouseStyle_2Story", "HouseStyle_SFoyer", "HouseStyle_SLvl")
+cols="QualityIndex"
+subdatanum[cols] <- lapply(subdatanum[cols], factor)
+
+```
+```{r}
+subdatanum
+```
+```{r}
+###########################
+# Helper functions
+###########################
+
+# find the graph node number by the coordinates
+find_node_by_coordinates <- function(x, y, grid_width) {
+ return(((y * grid_width) + x) - grid_width)
+}
+
+# return the number of observations represented by each node
+get_node_counts <- function(x) {
+ df <- data.frame(node = x)
+ counts <- df %>%
+   group_by(node) %>%
+   summarize(observations = n())
+}
+
+# guideline for grid size = 5 * sqrt(N)
+# where N is the number of observations in the data set
+find_grid_size <- function(N) {
+ return(floor(sqrt(sqrt(N) * 5)))
+}
+
+# Shane Lynn 14-01-2014 used to define the palette
+coolBlueHotRed <- function(n, alpha = 1) {
+ rainbow(n, end=4/6, alpha=alpha)[n:1]
+}
+```
+
+
+
+```{r}
+library(dplyr)
+numerics <- subdatanum %>%
+ select_if(is.numeric) %>%
+ names
+factors <- subdatanum %>%
+ select_if(is.factor) %>%
+ names
+
+factors
+```
+```{r}
+require(tidyverse)
+require(kohonen)
+require(ggplot2)
+require(ggridges)
+
+subdatanum=subdatanum[,-which(names(subdatanum) %in% c("OverallCond", "OverallQual"))]
+subdatanum$QualityIndex <- as.factor(subdatanum$QualityIndex)
+
+subdatanum %>%
+ 
+ gather(variable, value, -QualityIndex) %>%
+ ggplot(aes(y = as.factor(variable),
+             fill = QualityIndex,
+             x = percent_rank(value))) +
+ geom_density_ridges() +
+ ggtitle('Class Distributions') +
+ theme(plot.title = element_text(hjust = 0.5)) +
+ xlab('Value') +
+ ylab('Variable')
+
+
+```
+
+
+```{r}
+# find all columns having numeric data
+numerics <- subdatanum %>%
+ select_if(is.numeric) %>%
+ names
+
+
+
+
+# find all columns having factors
+factors <- subdatanum %>%
+ select_if(is.factor) %>%
+ names
+
+factors
+
+```
+
+```{r}
+subdatanum
+```
+```{r}
+
+data_list = list()
+distances = vector()
+
+# create a layer for each factor
+for (fac in factors){
+ data_list[[fac]] = kohonen::classvec2classmat( subdatanum[[fac]] )
+ distances = c(distances, 'tanimoto')
+}
+
+data_list[['numerics']] = scale(subdatanum[,numerics])
+distances = c(distances, 'sumofsquares')
+```
+
+```{r}
+# review data_list
+str(data_list)
+names(data_list)
+
+# review distance measures
+distances
+```
+```{r}
+subdatanum
+```
+
+```{r}
+# call the find_grid_size function to calculate the grid size
+map_dimension = find_grid_size(dim(subdatanum)[1])
+
+# set the number of times the model will cycle through the observations
+epochs = 2000
+set.seed(123)
+
+# create a grid onto which the som will be mapped
+som_grid = somgrid(xdim = 10
+                   ,ydim = 10
+                   ,topo = "rectangular")
+
+
+# train the SOM
+cc_som = supersom(data_list
+                  ,grid = som_grid
+                  ,rlen = epochs
+                  ,alpha = c(0.1, 0.01)
+                  ,whatmap = c(factors, 'numerics')
+                  ,dist.fcts = distances
+                  ,keep.data = TRUE
+)
+
+```
+
+#ind <- sapply(subdatanum, function(x) sum(x==0)) != nrow(subdatanum)
+#subdatanum[,ind]
+
+
+#library(kohonen)
+#library(dplyr)
+
+#som model
+#som <- supersom(data= as.list(data), grid = somgrid(10,10, "hexagonal"), 
+#               dist.fct = "euclidean", keep.data = TRUE)
+
+```{r}
+plot(cc_som, type = "changes")
+```
+```{r}
+plot(cc_som, type = "counts", palette.name = coolBlueHotRed)
+```
+
+```{r}
+cc_som$unit.classif
+#observations_by_node <- get_node_counts(cc_som$unit.classif)
+```
+```{r}
+plot(cc_som, type = "dist.neighbours", palette.name = coolBlueHotRed)
+
+```
+```{r}
+anomalies <- find_node_by_coordinates(1, 10, 1)
+rows <- which(cc_som$unit.classif == anomalies)
+subdatanum[rows, ]
+```
+```{r}
+anomalies <- find_node_by_coordinates(6, 5, 6)
+rows <- which(cc_som$unit.classif == anomalies)
+subdatanum[rows, ]
+```
+```{r}
+plot(cc_som, type = "codes", palette.name = coolBlueHotRed)
+```
+```{r}
+
+cc_som$codes[["QualityIndex"]]
+```
+
+```{r}
+plot(cc_som, type = "property", property = getCodes(cc_som)[["QualityIndex"]],
+main=colnames(getCodes(cc_som))[["QualityIndex"]], palette.name=coolBlueHotRed)
+```
+```{r}
+###########################
+# Clustering
+###########################
+
+library(RColorBrewer)
+n <- 60
+qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
+col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+
+# fuse all layers into one dataframe
+codes = tibble( layers = names(cc_som$codes)
+                ,codes = cc_som$codes ) %>%
+ mutate( codes = purrr::map(codes, as_tibble) ) %>%
+ spread( key = layers, value = codes) %>%
+ apply(1, bind_cols) %>%
+ .[[1]] %>%
+ as_tibble()
+
+# generate distance matrix for codes
+dist_m = dist(codes) %>%
+ as.matrix()
+
+# generate seperate distance matrix for map location
+dist_on_map = kohonen::unit.distances(som_grid)
+
+#exponentiate euclidean distance by distance on map
+dist_adj = dist_m ^ dist_on_map
+
+clust_adj = hclust(as.dist(dist_adj), 'ward.D2')
+
+som_cluster_adj = cutree(clust_adj, 11)
+
+plot(cc_som, type="codes", main = "Clusters", bgcol = col_vector[som_cluster_adj], pchs = NA)
+```
+```{r}
+par(mfrow = c(1, 2))
+plot(cc_som, type = "codes", main = c("Codes X", "Codes Y"))
+NBA.SOM4.hc <- cutree(hclust(dist(cc_som$codes$numerics)), 5)
+add.cluster.boundaries(cc_som, NBA.SOM4.hc)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
