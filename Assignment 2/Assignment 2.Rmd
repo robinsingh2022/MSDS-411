@@ -1,0 +1,134 @@
+---
+title: "Assignment 2"
+author: "Robin Singh"
+date: "7/6/2021"
+output: html_document
+---
+
+```{r }
+install.packages("psych")
+library(psych)
+bfi_data=bfi
+bfi_data_sub=bfi_data[1:(length(bfi_data)-3)]
+
+```
+
+```{r}
+bfi_data=bfi_data_sub[complete.cases(bfi_data_sub),]
+bfi_data
+```
+
+```{r}
+library("Hmisc")
+corrmatrix <- rcorr(as.matrix(bfi_data))
+corrmatrix
+```
+```{r}
+is.matrix(corrmatrix$r)
+corrmatrix=corrmatrix$r
+isSymmetric(corrmatrix)
+```
+
+```{r}
+bfi_data
+library(corrplot)
+corrplot(corrmatrix)
+```
+```{r}
+library(psych)
+fa(corrmatrix, nfactors=8) 
+factors_data <- factanal(covmat=corrmatrix, n.obs=1442, factors=3, rotation='varimax');
+
+
+```
+
+```{r}
+fa.parallel(bfi_data, 
+            n.obs=2236, 
+            fa="both", 
+            n.iter=100,
+            fm="ml",
+            show.legend=TRUE, main="Scree plot with parallel analysis")
+```
+```{r}
+eigen(corrmatrix)
+```
+```{r}
+
+factors_data <- fa(r = corrmatrix, nfactors = 4)
+
+factors_data <- factanal(covmat=corrmatrix, n.obs=2236, factors=4, rotation='varimax', fm='ml');
+
+factors_data
+```
+
+```{r}
+
+factors_data <- factanal(covmat=corrmatrix, n.obs=2236, factors=4, rotation='promax',fm='ml');
+factors_data
+```
+```{r}
+factors_data <- factanal(covmat=corrmatrix, n.obs=2236, factors=5, rotation='promax',fm='ml');
+factors_data
+```
+```{r}
+
+factors_data <- factanal(covmat=corrmatrix, n.obs=2236, factors=6, rotation='promax',fm='ml');
+factors_data
+```
+
+
+
+```{r}
+factors_data <- factanal(covmat=corrmatrix, n.obs=2236, factors=7, rotation='promax',fm='ml');
+factors_data
+```
+```{r}
+factors_data <- factanal(covmat=corrmatrix, n.obs=2236, factors=1, rotation='promax',fm='ml');
+factors_data
+```
+```{r}
+factors_data <- factanal(covmat=corrmatrix, n.obs=2236, factors=13, rotation='promax',fm='ml');
+factors_data
+```
+
+```{r}
+factors_data <- factanal(covmat=corrmatrix, n.obs=2236, factors=5, rotation='varimax',fm='ml');
+factors_data$loadings
+```
+```{r}
+bfi_data2=bfi
+bfi_data2=bfi_data2[complete.cases(bfi_data2),]
+bfi_data2$f1=0.816*bfi_data2$N1+0.787*bfi_data2$N2+0.714*bfi_data2$N3+0.562*bfi_data2$N4+0.518*bfi_data2$N5
+bfi_data2$f2=-0.587*bfi_data2$E1-0.674*bfi_data2$E2+0.613*bfi_data2$E4
+bfi_data2$f3=0.533*bfi_data2$C1+0.624*bfi_data2$C2+0.554*bfi_data2$C3-0.653*bfi_data2$C4-0.573*bfi_data2$C5
+bfi_data2$f4=0.601*bfi_data2$A2+0.662*bfi_data2$A3+0.580*bfi_data2$A5
+bfi_data2$f5=0.524*bfi_data2$O1+0.614*bfi_data2$O3-0.512*bfi_data2$O5
+bfi_data2
+
+```
+```{r}
+modelGender=lm(gender~f1+f2+f3+f4+f5, data = bfi_data2)
+summary(modelGender)
+mean(modelGender$residuals^2)
+AIC(modelGender)
+BIC(modelGender)
+bfi_data2$predictionGender=predict(modelGender)
+plot(bfi_data2$predictionGender,bfi_data2$gender)
+```
+```{r}
+modelEdu=lm(education~f1+f2+f3+f4+f5, data = bfi_data2)
+summary(modelEdu)
+mean(modelEdu$residuals^2)
+AIC(modelEdu)
+BIC(modelEdu)
+
+```
+
+```{r}
+modelAge=lm(age~f1+f2+f3+f4+f5, data = bfi_data2)
+summary(modelAge)
+mean(modelAge$residuals^2)
+AIC(modelAge)
+BIC(modelAge)
+```
